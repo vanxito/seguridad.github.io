@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Esteganografia C</title>
+    <link rel="stylesheet" href="./css/index.css">
+</head>
+
+<body>
+    <header class="Encabezado">
+        <div class="Title">
+            <P></P>
+            <h1>Esteganografia</h1>
+            <P></P>
+        </div>
+    </header>
+    <div class="JJ">
+        <div class="formulario">
+            <h1>Cifrar</h1>
+            <div class="archivo">
+                <input type="file" id="inputFileCifrar">
+            </div>
+            <div class="msj">
+                <input type="text" placeholder="Ingresa tu mensaje aquí..." id="messageInputCifrar">
+            </div>
+            <div class="clave">
+                <input placeholder="Clave de Cifrado (gatitosypatitos)" id="keyInputCifrar">
+            </div>
+            <div class="show">
+                <button id="buttonCifrar">Cifrar Mensaje</button>
+            </div>
+        </div>
+        <div class="formulario2">
+            <h1>Descifrar</h1>
+            <div class="archivo">
+                <input type="file" id="inputFileDescifrar">
+            </div>  
+            <div class="clave">
+                <input type="password" placeholder="Clave de Descifrado " id="keyInputDescifrar">
+            </div>
+            <div class="show">
+                <button id="buttonDescifrar">Descifrar Mensaje</button>
+            </div>
+            <div class="msj">
+                <input type="text" placeholder="Mensaje Descifrado" id="messageInputDescifrar">
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const numBubbles = 150; // Número de burbujas
+            const minSpeed = 3; // Velocidad mínima de movimiento
+            const maxSpeed = 8; // Velocidad máxima de movimiento
+
+            function createBubble() {
+                const bubble = document.createElement("div");
+                bubble.className = "bubble";
+                document.body.appendChild(bubble);
+
+                const size = Math.random() * 20 + 5; 
+                const posX = Math.random() * window.innerWidth;
+                const posY = window.innerHeight + size;
+
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                bubble.style.left = `${posX}px`;
+                bubble.style.top = `${posY}px`;
+
+                moveBubble(bubble);
+            }
+
+            function moveBubble(bubble) {
+                const speed = minSpeed + Math.random() * (maxSpeed - minSpeed);
+                const delay = Math.random() * 3000; 
+
+                setTimeout(() => {
+                    const animate = () => {
+                        const posY = parseInt(bubble.style.top) - speed;
+                        bubble.style.top = `${posY}px`;
+
+                        if (posY + parseInt(bubble.style.height) >= 0) {
+                            requestAnimationFrame(animate);
+                        } else {
+                            bubble.remove();
+                            createBubble();
+                        }
+                    };
+
+                    animate();
+                }, delay);
+            }
+
+            for (let i = 0; i < numBubbles; i++) {
+                createBubble();
+            }
+
+            function hideMessage(data, message) {
+                const messageBits = getBitsFromNumber(message.length);
+                messageBits.forEach((bit, i) => {
+                    data[i] = setBit(data[i], 0, bit);
+                });
+
+                for (let i = 0; i < message.length; i++) {
+                    const messageBits = getBitsFromNumber(message.charCodeAt(i));
+                    for (let j = 0; j < messageBits.length; j++) {
+                        const dataIndex = i * 16 + j + 16;
+                        data[dataIndex] = setBit(data[dataIndex], 0, messageBits[j]);
+                    }
+                }
+            }
+
+            function showMessage(data) {
+                const lengthBits = [];
+                for (let i = 0; i < 16; i++) {
+                    lengthBits.push(getBit(data[i], 0));
+                }
+                const messageLength = getNumberFromBits(lengthBits);
+
+                let message = '';
+                for (let i = 0; i < messageLength; i++) {
+                    const charBits = [];
+                    for (let j = 0; j < 16; j++) {
+                        const dataIndex = i * 16 + j + 16;
+                        charBits.push(getBit(data[dataIndex], 0));
+                    }
+                    message += String.fromCharCode(getNumberFromBits(charBits));
+                }
+
+                return message;
+            }
+
+            function getBitsFromNumber(number) {
+                const bits = [];
+                for (let i = 0; i < 16; i++) {
+                    bits.push(getBit(number, i));
+                }
+                return bits;
+            }
+
+            function getBit(number, bitPosition) {
+                return (number & (1 << bitPosition)) === 0 ? 0 : 1;
+            }
+
+            function setBit(number, bitPosition, bit) {
+                if (bit === 1) {
+                    return number | (1 << bitPosition);
+                } else {
+                    return number & ~(1 << bitPosition);
+                }
+            }
+
+            function getNumberFromBits(bits) {
+                let number = 0;
+                for (let i = 0; i < bits.length; i++) {
+                    number += bits[i] * Math.pow(2, i);
+                }
+                return number;
+            }
+
+            function downloadImage(dataUrl) {
+                const link = document.createElement('a');
+                link.href = dataUrl;
+                link.download = 'mensajeoculto.png';
+                link.click();
+            }
+
+            const inputFileCifrar = document.getElementById("inputFileCifrar");
+            const messageInputCifrar = document.getElementById("messageInputCifrar");
+            const keyInputCifrar = document.getElementById("keyInputCifrar");
+            const buttonCifrar = document.getElementById("buttonCifrar");
+
+            buttonCifrar.addEventListener('click', function() {
+                if (keyInputCifrar.value !== 'gatitosypatitos') {
+                    alert('Esa no es la clave');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, img.width, img.height);
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const message = messageInputCifrar.value;
+                        hideMessage(imageData.data, message);
+                        ctx.putImageData(imageData, 0, 0);
+                        downloadImage(canvas.toDataURL());
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(inputFileCifrar.files[0]);
+            });
+
+            const inputFileDescifrar = document.getElementById("inputFileDescifrar");
+            const messageInputDescifrar = document.getElementById("messageInputDescifrar");
+            const keyInputDescifrar = document.getElementById("keyInputDescifrar");
+            const buttonDescifrar = document.getElementById("buttonDescifrar");
+
+            buttonDescifrar.addEventListener('click', function() {
+                if (keyInputDescifrar.value !== 'gatitosypatitos') {
+                    alert('Esa no es la clave');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, img.width, img.height);
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const message = showMessage(imageData.data);
+                        messageInputDescifrar.value = message;
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(inputFileDescifrar.files[0]);
+            });
+        });
+    </script>
+    <script src="./index.js"></script>
+</body>
+</html>
